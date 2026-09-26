@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Trading Prediction Bot</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #07111f;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1100px;
+            margin: auto;
+            padding: 25px 0;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            color: #00e676;
+            font-size: 30px;
+        }
+
+        header p {
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: #111c2d;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        select {
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            padding: 11px;
+            border-radius: 8px;
+        }
+
+        button {
+            align-self: end;
+            background: #00c853;
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #00e676;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #111c2d;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .card span {
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .card strong {
+            font-size: 21px;
+        }
+
+        .signal-box {
+            background: #111c2d;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .signal-title {
+            color: #94a3b8;
+        }
+
+        #signal {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .up {
+            color: #00e676;
+        }
+
+        .down {
+            color: #ff5252;
+        }
+
+        .wait {
+            color: #facc15;
+        }
+
+        #message {
+            color: #94a3b8;
+        }
+
+        .history {
+            background: #111c2d;
+            padding: 20px;
+            border-radius: 15px;
+            overflow-x: auto;
+        }
+
+        .history h2 {
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #263449;
+            text-align: center;
+        }
+
+        th {
+            color: #94a3b8;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 25px;
+        }
+
+        @media (max-width: 800px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            #signal {
+                font-size: 38px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>📈 Trading Prediction Bot</h1>
+        <p>EMA + RSI market signal dashboard</p>
+    </header>
+
+    <div class="controls">
+
+        <label>
+            Asset
+            <select id="asset">
+                <option value="EUR/USD">EUR/USD</option>
+                <option value="GBP/USD">GBP/USD</option>
+                <option value="USD/JPY">USD/JPY</option>
+                <option value="AUD/USD">AUD/USD</option>
+            </select>
+        </label>
+
+        <label>
+            Timeframe
+            <select id="timeframe">
+                <option value="1">1 Minute</option>
+                <option value="5" selected>5 Minutes</option>
+                <option value="15">15 Minutes</option>
+            </select>
+        </label>
+
+        <button onclick="analyzeMarket()">
+            🔍 Analyze Market
+        </button>
+
+    </div>
+
+    <div class="dashboard">
+
+        <div class="card">
+            <span>Asset</span>
+            <strong id="assetDisplay">EUR/USD</strong>
+        </div>
+
+        <div class="card">
+            <span>Price</span>
+            <strong id="price">--</strong>
+        </div>
+
+        <div class="card">
+            <span>RSI</span>
+            <strong id="rsi">--</strong>
+        </div>
+
+        <div class="card">
+            <span>EMA 9</span>
+            <strong id="ema9">--</strong>
+        </div>
+
+        <div class="card">
+            <span>EMA 21</span>
+            <strong id="ema21">--</strong>
+        </div>
+
+    </div>
+
+    <div class="signal-box">
+
+        <div class="signal-title">
+            CURRENT SIGNAL
+        </div>
+
+        <div id="signal" class="wait">
+            WAITING
+        </div>
+
+        <div id="message">
+            Click "Analyze Market" to generate a signal.
+        </div>
+
+    </div>
+
+    <div class="history">
+
+        <h2>📋 Signal History</h2>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Asset</th>
+                    <th>Price</th>
+                    <th>RSI</th>
+                    <th>Signal</th>
+                </tr>
+            </thead>
+
+            <tbody id="historyTable"></tbody>
+
+        </table>
+
+    </div>
+
+    <footer>
+        Demo prediction system. Signals are not guaranteed to be accurate.
+    </footer>
+
+</div>
+
+
+<script>
+
+    /*
+        DEMO TRADING PREDICTION SYSTEM
+
+        Strategy:
+        - EMA 9
+        - EMA 21
+        - RSI
+
+        UP:
+        EMA9 > EMA21
+        Price > EMA9
+        RSI 50-70
+
+        DOWN:
+        EMA9 < EMA21
+        Price < EMA9
+        RSI 30-50
+
+        Otherwise:
+        NO TRADE
+
+        IMPORTANT:
+        This demo generates simulated values.
+        It does NOT connect to Pocket Option.
+    */
+
+
+    function generateMarketData() {
+
+        // Simulated price
+        const price = 1.05 + Math.random() * 0.15;
+
+        // Simulated EMA values
+        const ema9 =
+            price + (Math.random() - 0.5) * 0.01;
+
+        const ema21 =
+            price + (Math.random() - 0.5) * 0.01;
+
+        // Simulated RSI
+        const rsi =
+            30 + Math.random() * 40;
+
+        return {
+            price: price,
+            ema9: ema9,
+            ema21: ema21,
+            rsi: rsi
+        };
+    }
+
+
+    function generateSignal(data) {
+
+        // Bullish conditions
+        if (
+            data.ema9 > data.ema21 &&
+            data.price > data.ema9 &&
+            data.rsi > 50 &&
+            data.rsi < 70
+        ) {
+
+            return "UP";
+        }
+
+
+        // Bearish conditions
+        if (
+            data.ema9 < data.ema21 &&
+            data.price < data.ema9 &&
+            data.rsi > 30 &&
+            data.rsi < 50
+        ) {
+
+            return "DOWN";
+        }
+
+
+        return "NO TRADE";
+    }
+
+
+    function displaySignal(signal) {
+
+        const signalElement =
+            document.getElementById("signal");
+
+        const messageElement =
+            document.getElementById("message");
+
+
+        signalElement.className = "";
+
+
+        if (signal === "UP") {
+
+            signalElement.classList.add("up");
+
+            signalElement.innerHTML =
+                "▲ UP";
+
+            messageElement.innerHTML =
+                "Bullish technical conditions detected.";
+
+        }
+
+        else if (signal === "DOWN") {
+
+            signalElement.classList.add("down");
+
+            signalElement.innerHTML =
+                "▼ DOWN";
+
+            messageElement.innerHTML =
+                "Bearish technical conditions detected.";
+
+        }
+
+        else {
+
+            signalElement.classList.add("wait");
+
+            signalElement.innerHTML =
+                "⏸ NO TRADE";
+
+            messageElement.innerHTML =
+                "Market conditions are unclear.";
+        }
+    }
+
+
+    function addHistory(data, signal) {
+
+        const table =
+            document.getElementById("historyTable");
+
+        const row =
+            document.createElement("tr");
+
+        const time =
+            new Date().toLocaleTimeString();
+
+
+        row.innerHTML = `
+            <td>${time}</td>
+            <td>${document.getElementById("asset").value}</td>
+            <td>${data.price.toFixed(5)}</td>
+            <td>${data.rsi.toFixed(2)}</td>
+            <td>${signal}</td>
+        `;
+
+
+        table.prepend(row);
+
+
+        // Keep the latest 10 signals
+        while (table.children.length > 10) {
+
+            table.removeChild(
+                table.lastChild
+            );
+        }
+    }
+
+
+    function analyzeMarket() {
+
+        const data =
+            generateMarketData();
+
+
+        const signal =
+            generateSignal(data);
+
+
+        const selectedAsset =
+            document.getElementById("asset").value;
+
+
+        document.getElementById("assetDisplay")
+            .textContent = selectedAsset;
+
+
+        document.getElementById("price")
+            .textContent =
+            data.price.toFixed(5);
+
+
+        document.getElementById("rsi")
+            .textContent =
+            data.rsi.toFixed(2);
+
+
+        document.getElementById("ema9")
+            .textContent =
+            data.ema9.toFixed(5);
+
+
+        document.getElementById("ema21")
+            .textContent =
+            data.ema21.toFixed(5);
+
+
+        displaySignal(signal);
+
+
+        addHistory(
+            data,
+            signal
+        );
+    }
+
+</script>
+
+</body>
+</html>
